@@ -685,32 +685,55 @@ class MainWindow(Adw.ApplicationWindow):
     
     def show_about_dialog(self):
         """Show About dialog with credits"""
-        about = Adw.AboutWindow(
-            transient_for=self,
-            application_name="SSDsaver",
-            application_icon="drive-harddisk-symbolic",
-            developer_name="Andy Savage",
-            version="0.3.0 Beta",
-            website="https://github.com/andysavage/ssdsaver",
-            issue_url="https://github.com/andysavage/ssdsaver/issues",
-            copyright="© 2024 Andy Savage",
-            license_type=Gtk.License.GPL_3_0,
-            developers=["Andy Savage"],
-        )
-        
-        # Add credits for log2ram
-        about.add_credit_section(
-            "Includes",
-            [
-                "log2ram by Azlux https://github.com/azlux/log2ram"
-            ]
-        )
-        
-        about.add_legal_section(
-            "log2ram",
-            "© 2016-2023 Azlux",
-            Gtk.License.MIT_X11,
-            None
-        )
-        
-        about.present()
+        # Check if Adw.AboutWindow is available (Libadwaita 1.2+)
+        if hasattr(Adw, 'AboutWindow'):
+            about = Adw.AboutWindow(
+                transient_for=self,
+                application_name="SSDsaver",
+                application_icon="drive-harddisk-symbolic",
+                developer_name="Andy Savage",
+                version="0.3.0 Beta",
+                website="https://github.com/andysavage/ssdsaver",
+                issue_url="https://github.com/andysavage/ssdsaver/issues",
+                copyright="© 2024 Andy Savage",
+                license_type=Gtk.License.GPL_3_0,
+                developers=["Andy Savage"],
+            )
+            
+            # Add credits for log2ram
+            about.add_credit_section(
+                "Includes",
+                [
+                    "log2ram by Azlux https://github.com/azlux/log2ram"
+                ]
+            )
+            
+            about.add_legal_section(
+                "log2ram",
+                "© 2016-2023 Azlux",
+                Gtk.License.MIT_X11,
+                None
+            )
+            
+            about.present()
+        else:
+            # Fallback to Gtk.AboutDialog for older Libadwaita
+            about = Gtk.AboutDialog(
+                transient_for=self,
+                modal=True,
+                program_name="SSDsaver",
+                logo_icon_name="drive-harddisk-symbolic",
+                version="0.3.0 Beta",
+                website="https://github.com/andysavage/ssdsaver",
+                copyright="© 2024 Andy Savage",
+                license_type=Gtk.License.GPL_3_0,
+                authors=["Andy Savage"],
+            )
+            
+            # Add credits in comments or description since Gtk.AboutDialog is simpler
+            about.set_comments(
+                "A modern GTK4/Libadwaita desktop application for configuring log2ram.\n\n"
+                "Includes log2ram by Azlux (MIT License)."
+            )
+            
+            about.present()
