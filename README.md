@@ -47,6 +47,14 @@ dpkg-deb --build debian-package/ssdsaver
 sudo apt install ./debian-package/ssdsaver.deb
 ```
 
+## Credits
+
+SSDsaver includes [log2ram](https://github.com/azlux/log2ram) by [Azlux](https://github.com/azlux), licensed under the MIT License.
+
+log2ram is an excellent tool for reducing SSD wear by moving system logs to RAM. We've bundled it to provide a seamless user experience. All credit for the log2ram functionality goes to the original author.
+
+See [THIRD-PARTY-LICENSES](THIRD-PARTY-LICENSES) for full license information.
+
 ## License
 
 GNU General Public License v3.0 - see LICENSE file for details.

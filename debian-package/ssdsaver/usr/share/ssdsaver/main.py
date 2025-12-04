@@ -10,12 +10,20 @@ class Log2RamApp(Adw.Application):
     def __init__(self):
         super().__init__(application_id='com.example.log2ramconfig',
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
+        self.connect('activate', self.on_activate)
+        
+        # Create About action
+        about_action = Gio.SimpleAction.new("about", None)
+        about_action.connect("activate", self.on_about_action)
+        self.add_action(about_action)
 
-    def do_activate(self):
-        win = self.props.active_window
-        if not win:
-            win = MainWindow(application=self)
-        win.present()
+    def on_activate(self, app):
+        self.win = MainWindow(application=app)
+        self.win.present()
+    
+    def on_about_action(self, action, param):
+        """Show About dialog"""
+        self.win.show_about_dialog()
 
 def main():
     app = Log2RamApp()
