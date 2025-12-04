@@ -690,7 +690,7 @@ class MainWindow(Adw.ApplicationWindow):
             application_name="SSDsaver",
             application_icon="drive-harddisk-symbolic",
             developer_name="Andy Savage",
-            version="2.0.0",
+            version="0.3.0 Beta",
             website="https://github.com/andysavage/ssdsaver",
             issue_url="https://github.com/andysavage/ssdsaver/issues",
             copyright="© 2024 Andy Savage",
