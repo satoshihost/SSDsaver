@@ -1,0 +1,14 @@
+Package: ssdsaver
+Version: 1.0.2
+Section: admin
+Priority: optional
+Architecture: all
+Depends: python3 (>= 3.8), python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1
+Maintainer: Andy Savage <andy@example.com>
+Description: GUI configurator for log2ram (bundled)
+ A modern GTK4/Libadwaita desktop application for configuring and managing
+ log2ram on Debian-based systems. Provides an easy-to-use interface for
+ adjusting RAM size, sync methods, and service control without using the
+ command line.
+ .
+ This package includes log2ram bundled, so no separate installation is needed.

@@ -1,0 +1,32 @@
+#!/bin/bash
+# Pre-removal script for ssdsaver
+
+set -e
+
+# Stop and disable log2ram services
+if systemctl is-active --quiet log2ram.service; then
+    systemctl stop log2ram.service
+fi
+
+if systemctl is-active --quiet log2ram-daily.timer; then
+    systemctl stop log2ram-daily.timer
+fi
+
+systemctl disable log2ram.service 2>/dev/null || true
+systemctl disable log2ram-daily.timer 2>/dev/null || true
+
+# Remove systemd service files
+rm -f /etc/systemd/system/log2ram.service
+rm -f /etc/systemd/system/log2ram-daily.timer
+rm -f /etc/systemd/system/log2ram-daily.service
+
+# Remove log2ram binary and uninstaller
+rm -f /usr/local/bin/log2ram
+rm -f /usr/local/bin/uninstall-log2ram.sh
+
+# Reload systemd
+systemctl daemon-reload
+
+echo "log2ram removed successfully!"
+
+exit 0

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SSD Saver (Log2Ram Config)
+Comment=Configure and manage log2ram to reduce SSD wear
+Exec=ssdsaver
+Icon=drive-harddisk
+Terminal=false
+Categories=System;Settings;
+Keywords=log2ram;ram;ssd;configuration;

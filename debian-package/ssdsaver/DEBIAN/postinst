@@ -1,0 +1,38 @@
+#!/bin/bash
+# Post-installation script for ssdsaver
+
+set -e
+
+echo "Installing log2ram..."
+
+# Copy log2ram files to system locations
+cp /usr/share/ssdsaver/log2ram-bundle/log2ram /usr/local/bin/log2ram
+chmod +x /usr/local/bin/log2ram
+
+# Copy uninstall script
+cp /usr/share/ssdsaver/log2ram-bundle/uninstall.sh /usr/local/bin/uninstall-log2ram.sh
+chmod +x /usr/local/bin/uninstall-log2ram.sh
+
+# Copy config if it doesn't exist
+if [ ! -f /etc/log2ram.conf ]; then
+    cp /usr/share/ssdsaver/log2ram-bundle/log2ram.conf /etc/log2ram.conf
+fi
+
+# Install systemd service files
+cp /usr/share/ssdsaver/log2ram-bundle/log2ram.service /etc/systemd/system/
+cp /usr/share/ssdsaver/log2ram-bundle/log2ram-daily.timer /etc/systemd/system/
+cp /usr/share/ssdsaver/log2ram-bundle/log2ram-daily.service /etc/systemd/system/
+
+# Reload systemd and enable service
+systemctl daemon-reload
+systemctl enable log2ram.service
+systemctl enable log2ram-daily.timer
+
+# Start the service
+systemctl start log2ram.service
+systemctl start log2ram-daily.timer
+
+echo "log2ram installed and started successfully!"
+echo "SSD Saver installation complete!"
+
+exit 0
