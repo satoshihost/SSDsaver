@@ -1,10 +1,10 @@
 # SSDsaver Development Status - Dec 4, 2024
 
-## Current Status: v2.0.3 Complete - Ready for Use ✅
+## Current Status: v0.3.0 Beta - Public Testing Phase 🚧
 
-### Latest Update: Global RAM Budget Management
+### Latest Update: Rebranding to Beta
 
-Successfully implemented global RAM budget system with Settings tab, automatic validation, and smart warnings.
+Reset versioning to 0.3.0 Beta to correctly set user expectations. The application is feature-complete but still in testing.
 
 ### Completed Work
 
@@ -34,7 +34,7 @@ Successfully implemented global RAM budget system with Settings tab, automatic v
 - Synchronized displays across tabs
 
 #### Phase 7: Packaging ✅
-- Version: 2.0.3
+- Version: 0.3.0 Beta
 - Package rebuilt: debian-package/ssdsaver.deb
 - All source files copied to package directory
 - Successfully tested and installed
@@ -44,11 +44,11 @@ Successfully implemented global RAM budget system with Settings tab, automatic v
 Package installed successfully:
 ```bash
 dpkg -l | grep ssdsaver
-# Shows: ii ssdsaver 2.0.3 all
+# Shows: ii ssdsaver 0.3.0 all
 ```
 
 Files confirmed in place:
-- /usr/share/ssdsaver/ui.py (v2.0.3 with Settings tab)
+- /usr/share/ssdsaver/ui.py (v0.3.0 with Settings tab)
 - /usr/share/ssdsaver/folder_manager.py (with budget management)
 - /usr/share/ssdsaver/app_detector.py
 - /usr/share/ssdsaver/main.py

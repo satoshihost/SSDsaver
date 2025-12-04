@@ -133,5 +133,5 @@ GNU General Public License v3.0 - see LICENSE file for details.
 Andy Savage
 
 ## Version
-
-Current version: 2.0.3
+ 
+Current version: 0.3.0 Beta
