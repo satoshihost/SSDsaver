@@ -136,6 +136,62 @@ class FolderManager:
             # Assume bytes
             return int(size_str) // (1024 * 1024)
     
+    @staticmethod
+    def get_system_ram() -> int:
+        """Get total system RAM in MB"""
+        try:
+            with open('/proc/meminfo', 'r') as f:
+                for line in f:
+                    if line.startswith('MemTotal:'):
+                        # MemTotal is in kB
+                        kb = int(line.split()[1])
+                        return kb // 1024
+        except Exception as e:
+            print(f"Error reading system RAM: {e}")
+            return 0
+    
+    @staticmethod
+    def get_recommended_budget() -> int:
+        """Get recommended RAM budget in MB (10% of system RAM, max 512MB)"""
+        system_ram = FolderManager.get_system_ram()
+        recommended = min(512, system_ram // 10)
+        return max(128, recommended)  # Minimum 128MB
+    
+    def get_global_budget(self) -> int:
+        """Get the global RAM budget in MB"""
+        if 'GLOBAL' in self.config:
+            budget_str = self.config['GLOBAL'].get('budget', '512M')
+            return self._parse_size_to_mb(budget_str)
+        return self.get_recommended_budget()
+    
+    def set_global_budget(self, size_mb: int) -> bool:
+        """Set the global RAM budget"""
+        if 'GLOBAL' not in self.config:
+            self.config['GLOBAL'] = {}
+        self.config['GLOBAL']['budget'] = f"{size_mb}M"
+        return True
+    
+    def get_available_ram(self) -> int:
+        """Calculate remaining RAM budget (budget - used)"""
+        budget = self.get_global_budget()
+        used = self.get_total_ram_usage()
+        return max(0, budget - used)
+    
+    def would_exceed_budget(self, app_name: str, size_str: str) -> bool:
+        """Check if enabling an app would exceed the budget"""
+        size_mb = self._parse_size_to_mb(size_str)
+        current_usage = self.get_total_ram_usage()
+        
+        # If app is already enabled, subtract its current size
+        if self.is_app_enabled(app_name):
+            current_app_size = self._parse_size_to_mb(
+                self.config[app_name].get('size', '0M')
+            )
+            current_usage -= current_app_size
+        
+        budget = self.get_global_budget()
+        return (current_usage + size_mb) > budget
+    
     def update_log2ram_config(self) -> bool:
         """Update log2ram configuration with all enabled folders"""
         enabled_apps = self.get_enabled_apps()
@@ -152,6 +208,10 @@ class FolderManager:
         # Update log2ram.conf
         path_disk_value = ";".join(path_disk_entries)
         
+        # Get global budget for SIZE
+        budget_mb = self.get_global_budget()
+        size_value = f"{budget_mb}M"
+        
         try:
             # Read current log2ram config
             log2ram_config = {}
@@ -163,8 +223,9 @@ class FolderManager:
                             key, value = line.split("=", 1)
                             log2ram_config[key.strip()] = value.strip()
             
-            # Update PATH_DISK
+            # Update PATH_DISK and SIZE
             log2ram_config["PATH_DISK"] = f'"{path_disk_value}"'
+            log2ram_config["SIZE"] = size_value
             
             # Write back
             config_lines = []
