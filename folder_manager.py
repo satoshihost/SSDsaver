@@ -43,8 +43,9 @@ class FolderManager:
             self.config[app_name] = app_config
         
         try:
-            # Ensure config directory exists
-            os.makedirs(self.CONFIG_DIR, exist_ok=True)
+            # Ensure config directory exists (requires root)
+            if not os.path.exists(self.CONFIG_DIR):
+                subprocess.run(["pkexec", "mkdir", "-p", self.CONFIG_DIR], check=True)
             
             # Write config file (requires root)
             config_content = self._generate_config_content()

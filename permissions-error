@@ -1,0 +1,6 @@
+On trying to save changes in apps select and in main ram amount settings
+
+andy@hp3:~$ ssdsaver
+Error saving config: [Errno 13] Permission denied: '/etc/ssdsaver'
+Error saving config: [Errno 13] Permission denied: '/etc/ssdsaver'
+

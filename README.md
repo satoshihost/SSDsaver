@@ -134,4 +134,4 @@ Andy Savage
 
 ## Version
  
-Current version: 0.3.0 Beta
+Current Version: **0.3.1**

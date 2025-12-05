@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSDsaver – Save your SSD, live in RAM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --fg: #00ff99;
+      --fg-dim: #00b36b;
+      --accent: #00ff99;
+    }
+    body {
+      margin:0; padding:0;
+      height:100vh;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Roboto Mono', monospace;
+      display:flex; align-items:center; justify-content:center;
+      /*overflow:hidden; */
+    }
+    .terminal {
+      width:90%; max-width:920px;
+      background:#000;
+      border:1px solid #004d33;
+      border-radius:8px;
+      padding:2rem;
+      box-shadow: 0 0 30px rgba(0,255,153,0.4);
+      animation: flicker 4s infinite alternate;
+    }
+    h1 { margin:0 0 1rem; font-size:2.8rem; letter-spacing:2px; }
+    h2 { margin:1.5rem 0 0.5rem; color:var(--fg-dim); font-size:1.4rem; }
+    p, li { line-height:1.7; }
+    a { color:var(--accent); text-decoration:underline; }
+    a:hover { color:#fff; }
+    pre {
+      background:#111;
+      padding:1rem;
+      border-radius:4px;
+      overflow-x:auto;
+      border:1px solid #004d33;
+      margin:1rem 0;
+    }
+    .blink { animation: blink 1s steps(1) infinite; }
+    .small { font-size:0.9rem; color:#008855; }
+    @keyframes blink { 50% { opacity:0; } }
+    @keyframes flicker {
+      0%,100% { box-shadow:0 0 30px rgba(0,255,153,0.4); }
+      50% { box-shadow:0 0 40px rgba(0,255,153,0.6); }
+    }
+    footer { margin-top:3rem; font-size:0.9rem; color:#006644; }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <h1>SSDsaver<span class="blink">_</span></h1>
+    <p>Move logs, browser caches, package caches and any write-heavy folder to RAM.<br>
+       Drastically reduce SSD / eMMC / SD-card wear — without losing data on shutdown.</p>
+
+    <h2>What it does</h2>
+    <ul>
+      <li>Automatically detects installed browsers (Chrome, Chromium, Brave, Firefox, Edge, Vivaldi…)</li>
+      <li>One-click enable/disable for logs, browser caches, apt/yum/pacman/dnf caches, Steam shader cache, Discord, Node.js, etc.</li>
+      <li>Safe bind-mount + hourly rsync + shutdown sync (inspired by log2ram) → no corruption, survives clean reboots</li>
+      <li>Optional “lossy” tmpfs mode if you truly don’t care about persistence</li>
+      <li>Tiny footprint, no background daemon bloat</li>
+      <li>Works on Raspberry Pi, laptops, home servers, NAS boxes</li>
+    </ul>
+
+    <h2>Quick install (Debian/Ubuntu/Raspbian)</h2>
+    <pre>wget -qO- https://ssdsaver.example.com/install.sh | sudo bash</pre>
+
+    <h2>Or from source</h2>
+    <pre>git clone https://github.com/yourusername/ssdsaver.git
+cd ssdsaver
+sudo make install</pre>
+
+    <p class="small">
+      Built on top of the excellent <a href="https://github.com/azlux/log2ram">log2ram</a> by azlux (MIT).<br>
+      SSDsaver itself is also MIT-licensed — fork, modify, sell, enjoy.
+    </p>
+
+    <footer>
+      <a href="https://github.com/yourusername/ssdsaver">GitHub</a> •
+      <a href="https://github.com/yourusername/ssdsaver/issues">Issues</a> •
+      Made by someone who’s tired of killing SSDs since 2013
+    </footer>
+  </div>
+</body>
+</html>

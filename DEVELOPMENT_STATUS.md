@@ -1,10 +1,10 @@
 # SSDsaver Development Status - Dec 4, 2024
 
-## Current Status: v0.3.0 Beta - Public Testing Phase 🚧
+## Current Status: v0.3.1 - Public Testing Phase 🚧
 
 ### Latest Update: Rebranding to Beta
 
-Reset versioning to 0.3.0 Beta to correctly set user expectations. The application is feature-complete but still in testing.
+Updated versioning to 0.3.1. The application is feature-complete but still in testing.
 
 ### Completed Work
 
@@ -34,7 +34,7 @@ Reset versioning to 0.3.0 Beta to correctly set user expectations. The applicati
 - Synchronized displays across tabs
 
 #### Phase 7: Packaging ✅
-- Version: 0.3.0 Beta
+- Version: 0.3.1
 - Package rebuilt: debian-package/ssdsaver.deb
 - All source files copied to package directory
 - Successfully tested and installed
@@ -44,11 +44,11 @@ Reset versioning to 0.3.0 Beta to correctly set user expectations. The applicati
 Package installed successfully:
 ```bash
 dpkg -l | grep ssdsaver
-# Shows: ii ssdsaver 0.3.0 all
+# Shows: ii ssdsaver 0.3.1 all
 ```
 
 Files confirmed in place:
-- /usr/share/ssdsaver/ui.py (v0.3.0 with Settings tab)
+- /usr/share/ssdsaver/ui.py (v0.3.1 with Settings tab)
 - /usr/share/ssdsaver/folder_manager.py (with budget management)
 - /usr/share/ssdsaver/app_detector.py
 - /usr/share/ssdsaver/main.py
@@ -163,3 +163,30 @@ Potential additions:
 5. Test Safe/Lossy modes in production
 6. Consider publishing to GitHub releases
 7. Contact azlux on GitHub about integration
+
+### Release Process 📦
+
+**How to publish a new release with the .deb package:**
+
+1.  **Build the Package** (if not already built):
+    ```bash
+    # Run from the root of the repo
+    dpkg-deb --build debian-package
+    # This creates debian-package.deb (you may want to rename it to ssdsaver_0.3.0_all.deb)
+    mv debian-package.deb ssdsaver_0.3.0_all.deb
+    ```
+
+2.  **Create Release on GitHub**:
+    *   Go to: [https://github.com/satoshihost/SSDsaver/releases/new](https://github.com/satoshihost/SSDsaver/releases/new)
+    *   **Choose a tag**: Create a new tag (e.g., `v0.3.0-beta`).
+    *   **Title**: "v0.3.0 Beta - Public Testing".
+    *   **Description**: Paste the release notes (you can copy "Latest Update" or "Completed Work" from this file).
+
+3.  **Upload Assets**:
+    *   Drag and drop the `ssdsaver_0.3.0_all.deb` file into the "Attach binaries by dropping them here or selecting them" box.
+
+4.  **Publish**:
+    *   Check "Set as a pre-release" (since it's a Beta).
+    *   Click "Publish release".
+
+Your `.deb` file will now be available for download in the "Releases" sidebar on the main repo page.
