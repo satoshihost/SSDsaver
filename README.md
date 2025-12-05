@@ -19,7 +19,7 @@ A modern GTK4/Libadwaita desktop application for managing RAM-based caching to r
 ### From .deb package
 
 ```bash
-sudo apt install ./debian-package/ssdsaver.deb
+sudo apt install ./ssdsaver*.deb
 ```
 
 This will automatically install all dependencies including GTK4, Libadwaita, and log2ram.
@@ -94,17 +94,18 @@ ssdsaver
 cp *.py debian-package/ssdsaver/usr/share/ssdsaver/
 
 # Build the .deb package
-dpkg-deb --build debian-package/ssdsaver debian-package/ssdsaver.deb
+# Note: It is standard practice to include the version in the filename
+dpkg-deb --build debian-package/ssdsaver ssdsaver_0.3.1_all.deb
 
 # Install
-sudo apt install ./debian-package/ssdsaver.deb
+sudo apt install ./ssdsaver_0.3.1_all.deb
 ```
 
 ## Troubleshooting
 
 **App doesn't show new features after update**:
 1. Kill running instances: `pkill -f ssdsaver`
-2. Reinstall: `sudo apt install ./debian-package/ssdsaver.deb`
+2. Reinstall: `sudo apt install ./ssdsaver*.deb`
 3. Launch fresh: `ssdsaver`
 
 **Warning: "Exceeds RAM Budget"**:
