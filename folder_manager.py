@@ -193,8 +193,87 @@ class FolderManager:
         budget = self.get_global_budget()
         return (current_usage + size_mb) > budget
     
+    def save_all_configs(self, app_configs: Dict[str, Dict]) -> bool:
+        """Save both folders.conf and log2ram.conf in a single pkexec call"""
+        # 1. Prepare folders.conf content
+        # Update internal config first
+        self.config = configparser.ConfigParser()
+        for app_name, app_config in app_configs.items():
+            self.config[app_name] = app_config
+            
+        folders_content = self._generate_config_content()
+        
+        # 2. Prepare log2ram.conf content
+        # Build PATH_DISK list
+        enabled_apps = self.get_enabled_apps()
+        path_disk_entries = ["/var/log"]
+        
+        for app_name in enabled_apps:
+            app_config = self.get_app_config(app_name)
+            if app_config and "paths" in app_config:
+                paths = app_config["paths"].split(";")
+                path_disk_entries.extend(paths)
+        
+        path_disk_value = ";".join(path_disk_entries)
+        budget_mb = self.get_global_budget()
+        size_value = f"{budget_mb}M"
+        
+        # Read current log2ram config to preserve other settings
+        log2ram_lines = []
+        if os.path.exists("/etc/log2ram.conf"):
+            try:
+                with open("/etc/log2ram.conf", "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        if "=" in line:
+                            log2ram_lines.append(line)
+            except Exception:
+                pass
+        
+        # Update/Add keys
+        new_log2ram_config = {}
+        for line in log2ram_lines:
+            key, val = line.split("=", 1)
+            new_log2ram_config[key.strip()] = val.strip()
+            
+        new_log2ram_config["PATH_DISK"] = f'"{path_disk_value}"'
+        new_log2ram_config["SIZE"] = size_value
+        
+        log2ram_content = "\n".join([f"{k}={v}" for k, v in new_log2ram_config.items()]) + "\n"
+        
+        # 3. Create shell script to write both files
+        # We use a temporary script approach or a complex shell command
+        # Using a complex command with printf to avoid escaping hell
+        
+        try:
+            # Ensure config directory exists
+            cmd = (
+                f"mkdir -p {self.CONFIG_DIR} && "
+                f"cat > {self.CONFIG_FILE} << 'EOF'\n{folders_content}\nEOF\n"
+                f"cat > /etc/log2ram.conf << 'EOF'\n{log2ram_content}\nEOF\n"
+            )
+            
+            process = subprocess.run(
+                ["pkexec", "sh", "-c", cmd],
+                capture_output=True,
+                timeout=30
+            )
+            
+            if process.returncode != 0:
+                print(f"Error saving configs: {process.stderr.decode()}")
+                return False
+                
+            return True
+        except Exception as e:
+            print(f"Error saving all configs: {e}")
+            return False
+
     def update_log2ram_config(self) -> bool:
         """Update log2ram configuration with all enabled folders"""
+        # This method is kept for backward compatibility or isolated updates
+        # But we should try to use save_all_configs where possible
         enabled_apps = self.get_enabled_apps()
         
         # Build PATH_DISK list for log2ram

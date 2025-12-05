@@ -95,22 +95,39 @@ class MainWindow(Adw.ApplicationWindow):
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
         clamp.set_child(content_box)
         
-        # --- System Info Section ---
-        system_group = Adw.PreferencesGroup(title="System Information")
-        content_box.append(system_group)
+        # --- Service Control Section ---
+        self.service_group = Adw.PreferencesGroup(title="Service Control")
+        content_box.append(self.service_group)
+
+        self.status_row = Adw.ActionRow(title="Current Status")
+        self.status_label = Gtk.Label(label="Checking...")
+        self.status_row.add_suffix(self.status_label)
+        self.service_group.add(self.status_row)
+
+        # Control Buttons
+        self.controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.controls_box.set_halign(Gtk.Align.CENTER)
+        self.controls_box.set_margin_top(10)
         
-        # Total system RAM
-        system_ram_mb = self.folder_manager.get_system_ram()
-        system_ram_row = Adw.ActionRow(title="Total System RAM")
-        system_ram_label = Gtk.Label(label=f"{system_ram_mb} MB")
-        system_ram_label.add_css_class("title-3")
-        system_ram_row.add_suffix(system_ram_label)
-        system_group.add(system_ram_row)
+        self.btn_start = Gtk.Button(label="Start")
+        self.btn_start.connect("clicked", self.on_start_clicked)
+        self.controls_box.append(self.btn_start)
+
+        self.btn_stop = Gtk.Button(label="Stop")
+        self.btn_stop.connect("clicked", self.on_stop_clicked)
+        self.controls_box.append(self.btn_stop)
+
+        self.btn_restart = Gtk.Button(label="Restart")
+        self.btn_restart.connect("clicked", self.on_restart_clicked)
+        self.controls_box.append(self.btn_restart)
+
+        self.service_group.add(self.controls_box)
         
         # --- RAM Budget Section ---
+        system_ram_mb = self.folder_manager.get_system_ram()
         budget_group = Adw.PreferencesGroup(
             title="RAM Budget",
-            description="Set the total amount of RAM to allocate for caching. Don't exceed 50% of system RAM."
+            description=f"Total System RAM: {system_ram_mb} MB\nSet the total amount of RAM to allocate for caching."
         )
         content_box.append(budget_group)
         
@@ -204,34 +221,6 @@ class MainWindow(Adw.ApplicationWindow):
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
         clamp.set_child(content_box)
         
-        # --- Service Status Section ---
-        self.status_group = Adw.PreferencesGroup(title="Service Status")
-        content_box.append(self.status_group)
-
-        self.status_row = Adw.ActionRow(title="Current Status")
-        self.status_label = Gtk.Label(label="Checking...")
-        self.status_row.add_suffix(self.status_label)
-        self.status_group.add(self.status_row)
-
-        # Control Buttons
-        self.controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.controls_box.set_halign(Gtk.Align.CENTER)
-        self.controls_box.set_margin_top(10)
-        
-        self.btn_start = Gtk.Button(label="Start")
-        self.btn_start.connect("clicked", self.on_start_clicked)
-        self.controls_box.append(self.btn_start)
-
-        self.btn_stop = Gtk.Button(label="Stop")
-        self.btn_stop.connect("clicked", self.on_stop_clicked)
-        self.controls_box.append(self.btn_stop)
-
-        self.btn_restart = Gtk.Button(label="Restart")
-        self.btn_restart.connect("clicked", self.on_restart_clicked)
-        self.controls_box.append(self.btn_restart)
-
-        self.status_group.add(self.controls_box)
-
         # --- Configuration Section ---
         self.config_group = Adw.PreferencesGroup(title="System Logs Configuration")
         content_box.append(self.config_group)
@@ -505,14 +494,15 @@ class MainWindow(Adw.ApplicationWindow):
                     "paths": ";".join(app_info.cache_paths)
                 }
         
+        # Preserve Global Budget
+        budget_mb = self.folder_manager.get_global_budget()
+        app_configs['GLOBAL'] = {'budget': f"{budget_mb}M"}
+        
         # Save configuration
-        if self.folder_manager.save_config(app_configs):
-            # Update log2ram config
-            if self.folder_manager.update_log2ram_config():
-                self.toast_overlay.add_toast(Adw.Toast.new("Configuration saved! Restart service to apply."))
-                self.apply_apps_btn.set_sensitive(False)
-            else:
-                self.toast_overlay.add_toast(Adw.Toast.new("Failed to update log2ram configuration"))
+        if self.folder_manager.save_all_configs(app_configs):
+            self.toast_overlay.add_toast(Adw.Toast.new("Configuration saved! Restart service to apply."))
+            self.apply_apps_btn.set_sensitive(False)
+            self._update_settings_usage()  # Refresh Settings tab usage display
         else:
             self.toast_overlay.add_toast(Adw.Toast.new("Failed to save configuration"))
     
@@ -670,15 +660,11 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Save config and update log2ram
         app_configs = self.folder_manager._config_to_dict()
-        # Remove GLOBAL section as it's handled separately
-        app_configs.pop('GLOBAL', None)
+        # GLOBAL section is included in _config_to_dict, so we keep it to ensure it's saved
         
-        if self.folder_manager.save_config(app_configs):
-            if self.folder_manager.update_log2ram_config():
-                self.toast_overlay.add_toast(Adw.Toast.new(f"Budget set to {new_budget} MB. Restart service to apply."))
-                self.apply_budget_btn.set_sensitive(False)
-            else:
-                self.toast_overlay.add_toast(Adw.Toast.new("Failed to update log2ram configuration"))
+        if self.folder_manager.save_all_configs(app_configs):
+            self.toast_overlay.add_toast(Adw.Toast.new(f"Budget set to {new_budget} MB. Restart service to apply."))
+            self.apply_budget_btn.set_sensitive(False)
         else:
             self.toast_overlay.add_toast(Adw.Toast.new("Failed to save configuration"))
     
@@ -693,7 +679,7 @@ class MainWindow(Adw.ApplicationWindow):
                 application_icon="drive-harddisk-symbolic",
                 developer_name="Andy Savage",
                 version="0.3.1",
-                website="https://github.com/andysavage/ssdsaver",
+                website="https://satoshihost.com/ssdsaver/",
                 issue_url="https://github.com/andysavage/ssdsaver/issues",
                 copyright="© 2024 Andy Savage",
                 license_type=Gtk.License.GPL_3_0,
@@ -724,7 +710,7 @@ class MainWindow(Adw.ApplicationWindow):
                 program_name="SSDsaver",
                 logo_icon_name="drive-harddisk-symbolic",
                 version="0.3.1",
-                website="https://github.com/andysavage/ssdsaver",
+                website="https://satoshihost.com/ssdsaver/",
                 copyright="© 2024 Andy Savage",
                 license_type=Gtk.License.GPL_3_0,
                 authors=["Andy Savage"],
