@@ -4,15 +4,15 @@ A modern GTK4/Libadwaita desktop application for managing RAM-based caching to r
 
 ## Features
 
-- 🎨 Modern GTK4/Libadwaita interface with tabbed layout
-- 💾 **Global RAM Budget Management** - Set total RAM allocation with slider or manual input
-- 🌐 **Browser Cache Management** - Move Chrome, Firefox, Brave, Edge, Opera, Vivaldi caches to RAM
-- 📱 **Application Cache Support** - Discord, Slack, Steam, APT, thumbnails, and more
-- ⚙️ **System Logs** - Configure log2ram settings (RAM size, sync method, ZRAM support)
-- 🔄 Service control - Start, stop, and restart services
-- 📊 Real-time RAM usage tracking with visual progress bar
-- 🔐 Secure privilege elevation using pkexec
-- ⚠️ Smart warnings when apps exceed RAM budget
+- Modern GTK4/Libadwaita interface with tabbed layout
+- **Global RAM Budget Management** - Set total RAM allocation with slider or manual input
+- **Browser Cache Management** - Move Chrome, Firefox, Brave, Edge, Opera, Vivaldi caches to RAM
+- **Application Cache Support** - Discord, Slack, Steam, APT, thumbnails, and more
+- **System Logs** - Configure log2ram settings (RAM size, sync method, ZRAM support)
+- Service control - Start, stop, and restart services
+- Real-time RAM usage tracking with visual progress bar
+- Secure privilege elevation using pkexec
+- Smart warnings when apps exceed RAM budget
 
 ## Installation
 
