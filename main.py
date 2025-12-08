@@ -8,7 +8,7 @@ from ui import MainWindow
 
 class Log2RamApp(Adw.Application):
     def __init__(self):
-        super().__init__(application_id='com.example.log2ramconfig',
+        super().__init__(application_id='com.satoshihost.ssdsaver',
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.connect('activate', self.on_activate)
         
