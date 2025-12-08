@@ -4,15 +4,17 @@ A modern GTK4/Libadwaita desktop application for managing RAM-based caching to r
 
 ## Features
 
-- Modern GTK4/Libadwaita interface with tabbed layout
-- **Global RAM Budget Management** - Set total RAM allocation with slider or manual input
-- **Browser Cache Management** - Move Chrome, Firefox, Brave, Edge, Opera, Vivaldi caches to RAM
-- **Application Cache Support** - Discord, Slack, Steam, APT, thumbnails, and more
-- **System Logs** - Configure log2ram settings (RAM size, sync method, ZRAM support)
-- Service control - Start, stop, and restart services
-- Real-time RAM usage tracking with visual progress bar
-- Secure privilege elevation using pkexec
-- Smart warnings when apps exceed RAM budget
+- 🎨 Modern GTK4/Libadwaita interface with tabbed layout
+- 💾 **Global RAM Budget Management** - Hard limit prevents over-provisioning
+- 🌐 **Browser Cache Management** - Move Chrome, Firefox, Brave, Edge, Opera, Vivaldi caches to RAM
+- 📱 **Application Cache Support** - Discord, Slack, Steam, APT, thumbnails, and more
+- ⚙️ **System Logs** - Configure log2ram settings (RAM size, sync method, ZRAM support)
+- 🔄 Service control - Start, stop, and restart services
+- 📊 **Advanced Monitoring** - Real-time per-app RAM usage and session peak tracking
+- 🧹 **Auto-Clear Cache** - Automatically clears old large caches when enabling apps
+- 🔐 Secure privilege elevation using pkexec
+- ⚠️ Smart warnings when apps exceed RAM budget
+
 
 ## Installation
 
@@ -58,6 +60,8 @@ ssdsaver
 **Applications Tab**:
 - Auto-detect installed browsers and apps
 - Enable/disable RAM caching per app
+- **Auto-Clear**: Automatically deletes old cache when enabling an app
+- **Monitoring**: View real-time usage and session peak for each app
 - Configure RAM size per app
 - Choose Safe (synced) or Lossy (RAM-only) mode
 
@@ -108,10 +112,10 @@ sudo apt install ./ssdsaver_0.3.1_all.deb
 2. Reinstall: `sudo apt install ./ssdsaver*.deb`
 3. Launch fresh: `ssdsaver`
 
-**Warning: "Exceeds RAM Budget"**:
+**Warning: "Insufficient RAM Budget"**:
+- You cannot enable an app if it exceeds your remaining Global Budget.
 - Go to Settings tab and increase budget, OR
-- Disable other apps to free up space, OR
-- Reduce RAM allocation for the app
+- Disable other apps to free up space.
 
 **Service won't start**:
 - Check log2ram status: `systemctl status log2ram`
@@ -135,4 +139,4 @@ Andy Savage
 
 ## Version
  
-Current Version: **0.3.1**
+Current Version: **0.3.3**

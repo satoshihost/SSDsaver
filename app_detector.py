@@ -42,14 +42,19 @@ class AppDetector:
         "firefox": {
             "display_name": "Mozilla Firefox",
             "executables": ["firefox"],
-            "cache_paths": ["~/.cache/mozilla/firefox/*.default-release/cache2"],
+            # Broader pattern to catch .default, .default-release, .default-esr, etc.
+            "cache_paths": ["~/.cache/mozilla/firefox/*.default*/cache2"],
             "default_size": "150M",
             "icon": "firefox"
         },
         "brave": {
             "display_name": "Brave Browser",
             "executables": ["brave", "brave-browser"],
-            "cache_paths": ["~/.config/BraveSoftware/Brave-Browser/Default/Cache"],
+            # Check both .config (older/some distros) and .cache (newer/standard)
+            "cache_paths": [
+                "~/.config/BraveSoftware/Brave-Browser/Default/Cache",
+                "~/.cache/BraveSoftware/Brave-Browser/Default/Cache"
+            ],
             "default_size": "200M",
             "icon": "brave-browser"
         },

@@ -326,3 +326,88 @@ class FolderManager:
         except Exception as e:
             print(f"Error updating log2ram config: {e}")
             return False
+    def get_path_usage_mb(self, path: str) -> float:
+        """Get actual usage of a path in MB using du"""
+        try:
+            # Expand user path if needed
+            if path.startswith('~'):
+                path = os.path.expanduser(path)
+            
+            # Handle wildcards
+            if '*' in path:
+                from glob import glob
+                expanded = glob(path)
+                total = 0.0
+                for p in expanded:
+                    total += self.get_path_usage_mb(p)
+                return total
+
+            if not os.path.exists(path):
+                return 0.0
+                
+            output = subprocess.check_output(['du', '-sk', path], stderr=subprocess.DEVNULL)
+            kb = int(output.split()[0])
+            return kb / 1024
+        except Exception:
+            return 0.0
+
+    def get_app_actual_usage(self, app_name: str, detected_paths: List[str] = None) -> float:
+        """Get actual usage for an app in MB"""
+        # Prefer passed paths (fresh from detector) over config paths (stale)
+        if detected_paths:
+            paths = detected_paths
+        else:
+            config = self.get_app_config(app_name)
+            if not config or "paths" not in config:
+                return 0.0
+            paths = config["paths"].split(";")
+            
+        total = 0.0
+        for p in paths:
+            total += self.get_path_usage_mb(p)
+        return total
+
+    def clear_app_cache(self, app_name: str, detected_paths: List[str] = None) -> bool:
+        """Clear the cache for an application"""
+        import shutil
+        
+        if detected_paths:
+            paths = detected_paths
+        else:
+            config = self.get_app_config(app_name)
+            if not config or "paths" not in config:
+                return False
+            paths = config["paths"].split(";")
+            
+        success = True
+        for path in paths:
+            # Expand user path
+            if path.startswith('~'):
+                path = os.path.expanduser(path)
+                
+            # Handle wildcards
+            if '*' in path:
+                from glob import glob
+                expanded = glob(path)
+                for p in expanded:
+                    try:
+                        if os.path.exists(p):
+                            if os.path.isdir(p):
+                                shutil.rmtree(p)
+                            else:
+                                os.remove(p)
+                    except Exception as e:
+                        print(f"Error clearing cache {p}: {e}")
+                        success = False
+            else:
+                try:
+                    if os.path.exists(path):
+                        if os.path.isdir(path):
+                            shutil.rmtree(path)
+                        else:
+                            os.remove(path)
+                except Exception as e:
+                    print(f"Error clearing cache {path}: {e}")
+                    success = False
+                    
+        return success

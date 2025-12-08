@@ -24,6 +24,14 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Store detected apps
         self.detected_apps = []
+        
+        # Usage Monitoring
+        self.peak_usage = {}  # app_name -> float (MB)
+        self.usage_mode = "current"  # "current" or "peak"
+        self.usage_rows = {}  # app_name -> (ActionRow, Label, ProgressBar)
+        
+        # Start usage monitoring timer (2 seconds)
+        GLib.timeout_add(2000, self._update_usage_stats)
 
         # Main Layout
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -63,21 +71,21 @@ class MainWindow(Adw.ApplicationWindow):
     def _build_ui(self):
         # --- Settings Tab (First/Default) ---
         self.settings_page = self._build_settings_tab()
-        self.tab_view.append(self.settings_page)
-        self.tab_view.get_page(self.settings_page).set_title("Settings")
-        self.tab_view.get_page(self.settings_page).set_icon(Gio.ThemedIcon.new("preferences-system-symbolic"))
+        self.settings_tab_page = self.tab_view.append(self.settings_page)
+        self.settings_tab_page.set_title("Settings")
+        self.settings_tab_page.set_icon(Gio.ThemedIcon.new("preferences-system-symbolic"))
         
         # --- System Logs Tab ---
         self.logs_page = self._build_logs_tab()
-        self.tab_view.append(self.logs_page)
-        self.tab_view.get_page(self.logs_page).set_title("System Logs")
-        self.tab_view.get_page(self.logs_page).set_icon(Gio.ThemedIcon.new("folder-documents-symbolic"))
+        self.logs_tab_page = self.tab_view.append(self.logs_page)
+        self.logs_tab_page.set_title("System Logs")
+        self.logs_tab_page.set_icon(Gio.ThemedIcon.new("folder-documents-symbolic"))
         
         # --- Applications Tab ---
         self.apps_page = self._build_apps_tab()
-        self.tab_view.append(self.apps_page)
-        self.tab_view.get_page(self.apps_page).set_title("Applications")
-        self.tab_view.get_page(self.apps_page).set_icon(Gio.ThemedIcon.new("applications-system-symbolic"))
+        self.apps_tab_page = self.tab_view.append(self.apps_page)
+        self.apps_tab_page.set_title("Applications")
+        self.apps_tab_page.set_icon(Gio.ThemedIcon.new("applications-system-symbolic"))
 
     def _build_settings_tab(self):
         """Build the Settings tab for global RAM budget"""
@@ -200,7 +208,32 @@ class MainWindow(Adw.ApplicationWindow):
         self.apply_budget_btn.set_margin_top(20)
         self.apply_budget_btn.set_sensitive(False)
         self.apply_budget_btn.connect("clicked", self.on_apply_budget_clicked)
+        self.apply_budget_btn.connect("clicked", self.on_apply_budget_clicked)
         content_box.append(self.apply_budget_btn)
+        
+        # --- Detailed Usage Section ---
+        self.details_group = Adw.PreferencesGroup(title="Detailed Usage")
+        content_box.append(self.details_group)
+        
+        # Toggle Current/Peak
+        toggle_row = Adw.ActionRow(title="View Mode")
+        
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        box.set_valign(Gtk.Align.CENTER)
+        
+        self.mode_toggle = Gtk.ToggleButton(label="Current")
+        self.mode_toggle.set_active(True)
+        self.mode_toggle.connect("toggled", self.on_usage_mode_toggled)
+        box.append(self.mode_toggle)
+        
+        self.peak_label = Gtk.Label(label="Peak (Session)")
+        # box.append(self.peak_label) # Just using the toggle button text change for now
+        
+        toggle_row.add_suffix(box)
+        self.details_group.add(toggle_row)
+        
+        # App usage list (populated dynamically)
+        self._refresh_usage_list()
         
         return scrolled
 
@@ -300,6 +333,20 @@ class MainWindow(Adw.ApplicationWindow):
         
         content_box.append(header_box)
         
+        # Warning Label
+        warning_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        warning_box.set_halign(Gtk.Align.CENTER)
+        
+        warn_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        warn_icon.add_css_class("warning")
+        warning_box.append(warn_icon)
+        
+        warn_label = Gtk.Label(label="Enabling an app will DELETE its existing cache")
+        warn_label.add_css_class("warning")
+        warning_box.append(warn_label)
+        
+        content_box.append(warning_box)
+        
         # Applications list
         self.apps_group = Adw.PreferencesGroup(title="Detected Applications")
         content_box.append(self.apps_group)
@@ -342,6 +389,9 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Detect apps
         self.detect_apps()
+        
+        # Initial usage update
+        self._update_usage_stats()
 
     def _update_status(self):
         status = self.service_manager.get_status()
@@ -400,6 +450,7 @@ class MainWindow(Adw.ApplicationWindow):
         size_entry.set_text(app_info.default_size)
         size_entry.set_valign(Gtk.Align.CENTER)
         size_entry.set_width_chars(8)
+        size_entry.connect("changed", lambda w: self.on_app_param_changed())
         size_row.add_suffix(size_entry)
         row.add_row(size_row)
         
@@ -407,6 +458,7 @@ class MainWindow(Adw.ApplicationWindow):
         mode_row = Adw.ActionRow(title="Mode", subtitle="Safe: syncs to disk | Lossy: RAM only")
         mode_combo = Gtk.DropDown.new_from_strings(["Safe", "Lossy"])
         mode_combo.set_valign(Gtk.Align.CENTER)
+        mode_combo.connect("notify::selected", lambda w, p: self.on_app_param_changed())
         mode_row.add_suffix(mode_combo)
         row.add_row(mode_row)
         
@@ -434,26 +486,29 @@ class MainWindow(Adw.ApplicationWindow):
                     new_total = used_mb + size_mb
                     
                     # Show warning dialog
-                    dialog = Adw.MessageDialog.new(self)
-                    dialog.set_heading("Exceeds RAM Budget")
-                    dialog.set_body(
-                        f"Enabling this app would use {new_total} MB, exceeding your "
-                        f"budget of {budget_mb} MB.\n\n"
-                        f"Options:\n"
-                        f"• Increase your budget in the Settings tab\n"
-                        f"• Disable other apps to free up space\n"
-                        f"• Reduce the RAM allocation for this app"
+                    # Use Gtk.MessageDialog for compatibility
+                    # Show warning dialog
+                    # Use Gtk.MessageDialog for compatibility
+                    dialog = Gtk.MessageDialog(
+                        transient_for=self,
+                        modal=True,
+                        message_type=Gtk.MessageType.WARNING,
+                        buttons=Gtk.ButtonsType.NONE,
+                        text="Insufficient RAM Budget",
+                        secondary_text=(
+                            f"Enabling this app requires {size_mb} MB, but you only have "
+                            f"{max(0, budget_mb - used_mb)} MB remaining.\n\n"
+                            f"Please increase your Global Budget or disable other apps."
+                        )
                     )
-                    dialog.add_response("cancel", "Cancel")
-                    dialog.add_response("increase", "Go to Settings")
-                    dialog.set_response_appearance("increase", Adw.ResponseAppearance.SUGGESTED)
-                    dialog.set_default_response("cancel")
-                    dialog.set_close_response("cancel")
+                    dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+                    dialog.add_button("Go to Settings", Gtk.ResponseType.ACCEPT)
                     
                     def on_response(dialog, response):
-                        if response == "increase":
+                        dialog.destroy()
+                        if response == Gtk.ResponseType.ACCEPT:
                             # Switch to Settings tab
-                            self.tab_view.set_selected_page(self.settings_page)
+                            self.tab_view.set_selected_page(self.settings_tab_page)
                         else:
                             # Uncheck the switch
                             row.enable_switch.set_active(False)
@@ -461,11 +516,30 @@ class MainWindow(Adw.ApplicationWindow):
                     dialog.connect("response", on_response)
                     dialog.present()
                     return True  # Block the toggle
+
+                # Check if existing cache is larger than allocated size
+                # Get fresh paths
+                app_info = next((a for a in self.detected_apps if a.name == app_name), None)
+                detected_paths = app_info.cache_paths if app_info else None
+                
+                current_app_usage = self.folder_manager.get_app_actual_usage(app_name, detected_paths)
+                size_mb = self.folder_manager._parse_size_to_mb(size_str)
+                
+                # Check if existing cache is larger than allocated size
+                # We now auto-clear on apply, so no dialog needed here.
+                # Just proceed.
         
         self.apply_apps_btn.set_sensitive(True)
         self._update_ram_usage()
         self._update_settings_usage()  # Update Settings tab too
         return False
+        
+    
+    def on_app_param_changed(self):
+        """Called when app size or mode changes"""
+        self.apply_apps_btn.set_sensitive(True)
+        self._update_ram_usage()
+        self._update_settings_usage()
     
     def on_detect_apps_clicked(self, btn):
         """Refresh app detection"""
@@ -474,6 +548,9 @@ class MainWindow(Adw.ApplicationWindow):
     
     def on_apply_apps_clicked(self, btn):
         """Apply application cache settings"""
+        # Get currently enabled apps to detect new ones
+        currently_enabled = self.folder_manager.get_enabled_apps()
+        
         # Build configuration
         app_configs = {}
         
@@ -484,6 +561,11 @@ class MainWindow(Adw.ApplicationWindow):
                 if not app_info:
                     continue
                 
+                # Auto-clear cache if newly enabled
+                if app_name not in currently_enabled:
+                    if self.folder_manager.clear_app_cache(app_name, app_info.cache_paths):
+                        self.toast_overlay.add_toast(Adw.Toast.new(f"Cleared existing cache for {app_name}"))
+                
                 size = row.size_entry.get_text()
                 mode = "safe" if row.mode_combo.get_selected() == 0 else "lossy"
                 
@@ -491,11 +573,36 @@ class MainWindow(Adw.ApplicationWindow):
                     "enabled": "true",
                     "size": size,
                     "mode": mode,
+                    # Always use fresh paths from detector, not stale config
                     "paths": ";".join(app_info.cache_paths)
                 }
         
-        # Preserve Global Budget
+        # Validate Total Budget
         budget_mb = self.folder_manager.get_global_budget()
+        total_size_mb = 0
+        for config in app_configs.values():
+            if config.get("enabled", "false") == "true":
+                total_size_mb += self.folder_manager._parse_size_to_mb(config.get("size", "0M"))
+                
+        if total_size_mb > budget_mb:
+            # Show error dialog
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Configuration Exceeds Budget",
+                secondary_text=(
+                    f"Total allocated size ({total_size_mb} MB) exceeds your global budget "
+                    f"of {budget_mb} MB.\n\n"
+                    f"Please reduce the size of some apps or increase your global budget."
+                )
+            )
+            dialog.connect("response", lambda d, r: d.destroy())
+            dialog.present()
+            return
+
+        # Preserve Global Budget
         app_configs['GLOBAL'] = {'budget': f"{budget_mb}M"}
         
         # Save configuration
@@ -643,15 +750,19 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Warn if budget is less than current usage
         if new_budget < used_mb:
-            dialog = Adw.MessageDialog.new(self)
-            dialog.set_heading("Budget Below Current Usage")
-            dialog.set_body(
-                f"You are trying to set a budget of {new_budget} MB, but enabled apps "
-                f"are currently using {used_mb} MB. Please disable some apps first or "
-                f"increase the budget."
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.WARNING,
+                buttons=Gtk.ButtonsType.OK,
+                text="Budget Below Current Usage",
+                secondary_text=(
+                    f"You are trying to set a budget of {new_budget} MB, but enabled apps "
+                    f"are currently using {used_mb} MB. Please disable some apps first or "
+                    f"increase the budget."
+                )
             )
-            dialog.add_response("ok", "OK")
-            dialog.set_default_response("ok")
+            dialog.connect("response", lambda d, r: d.destroy())
             dialog.present()
             return
         
@@ -678,7 +789,7 @@ class MainWindow(Adw.ApplicationWindow):
                 application_name="SSDsaver",
                 application_icon="drive-harddisk-symbolic",
                 developer_name="Andy Savage",
-                version="0.3.1",
+                version="0.3.3",
                 website="https://satoshihost.com/ssdsaver/",
                 issue_url="https://github.com/andysavage/ssdsaver/issues",
                 copyright="© 2024 Andy Savage",
@@ -709,7 +820,7 @@ class MainWindow(Adw.ApplicationWindow):
                 modal=True,
                 program_name="SSDsaver",
                 logo_icon_name="drive-harddisk-symbolic",
-                version="0.3.1",
+                version="0.3.3",
                 website="https://satoshihost.com/ssdsaver/",
                 copyright="© 2024 Andy Savage",
                 license_type=Gtk.License.GPL_3_0,
@@ -723,3 +834,107 @@ class MainWindow(Adw.ApplicationWindow):
             )
             
             about.present()
+
+    def _refresh_usage_list(self):
+        """Rebuild the usage list rows"""
+        enabled_apps = self.folder_manager.get_enabled_apps()
+        
+        # Remove rows for disabled apps
+        for app_name in list(self.usage_rows.keys()):
+            if app_name not in enabled_apps:
+                row, _, _ = self.usage_rows.pop(app_name)
+                self.details_group.remove(row)
+        
+        # Add rows for new enabled apps
+        for app_name in enabled_apps:
+            if app_name not in self.usage_rows:
+                row = Adw.ActionRow(title=app_name)
+                
+                box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+                box.set_valign(Gtk.Align.CENTER)
+                box.set_margin_top(8)
+                box.set_margin_bottom(8)
+                box.set_hexpand(True)
+                
+                # Label for value
+                val_label = Gtk.Label(label="Calculating...")
+                val_label.set_halign(Gtk.Align.END)
+                val_label.add_css_class("caption")
+                
+                # Progress bar
+                prog = Gtk.ProgressBar()
+                prog.set_hexpand(True)
+                prog.set_size_request(100, -1)
+                
+                box.append(val_label)
+                box.append(prog)
+                
+                row.add_suffix(box)
+                self.details_group.add(row)
+                
+                self.usage_rows[app_name] = (row, val_label, prog)
+
+    def _update_usage_stats(self):
+        """Timer callback to update usage statistics"""
+        # Optimization: Only update if Settings tab is visible
+        selected_page = self.tab_view.get_selected_page()
+        if not selected_page or selected_page.get_child() != self.settings_page:
+            return True
+
+        enabled_apps = self.folder_manager.get_enabled_apps()
+        
+        # Refresh list if apps changed
+        if len(enabled_apps) != len(self.usage_rows):
+            self._refresh_usage_list()
+            
+        for app_name in enabled_apps:
+            # Get fresh paths from detected apps if available
+            app_info = next((a for a in self.detected_apps if a.name == app_name), None)
+            detected_paths = app_info.cache_paths if app_info else None
+            
+            # Get current usage
+            current = self.folder_manager.get_app_actual_usage(app_name, detected_paths)
+            
+            # Update peak
+            peak = self.peak_usage.get(app_name, 0.0)
+            if current > peak:
+                self.peak_usage[app_name] = current
+                peak = current
+            
+            # Get allocated size for percentage
+            config = self.folder_manager.get_app_config(app_name)
+            allocated_str = config.get("size", "0M")
+            allocated = self.folder_manager._parse_size_to_mb(allocated_str)
+            
+            # Update UI if row exists
+            if app_name in self.usage_rows:
+                _, label, prog = self.usage_rows[app_name]
+                
+                display_val = current if self.usage_mode == "current" else peak
+                label.set_label(f"{display_val:.1f} MB / {allocated} MB")
+                
+                if allocated > 0:
+                    fraction = min(1.0, display_val / allocated)
+                    prog.set_fraction(fraction)
+                    
+                    # Color coding
+                    if display_val > allocated:
+                        prog.add_css_class("error")
+                    elif fraction > 0.9:
+                        prog.add_css_class("warning")
+                    else:
+                        prog.remove_css_class("error")
+                        prog.remove_css_class("warning")
+        
+        return True  # Keep timer running
+
+    def on_usage_mode_toggled(self, btn):
+        if btn.get_active():
+            self.usage_mode = "current"
+            btn.set_label("Current Usage")
+        else:
+            self.usage_mode = "peak"
+            btn.set_label("Session Peak")
+        
+        # Force immediate update
+        self._update_usage_stats()
