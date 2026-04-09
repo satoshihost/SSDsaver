@@ -1,5 +1,7 @@
 # SSDsaver - Comprehensive SSD Wear Reduction Tool
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/satoshihost/SSDsaver)
+
 A modern GTK4/Libadwaita desktop application for managing RAM-based caching to reduce SSD wear on Debian-based Linux systems.
 
 ## Features
@@ -15,6 +17,19 @@ A modern GTK4/Libadwaita desktop application for managing RAM-based caching to r
 - 🔐 Secure privilege elevation using pkexec
 - ⚠️ Smart warnings when apps exceed RAM budget
 
+## System Requirements
+
+**Minimum:**
+- Debian 12 (Bookworm) or Ubuntu 22.04+
+- GTK4 and Libadwaita 1.0+
+- Python 3.8+
+
+**Note:** This application requires GTK4 and will **not work** on:
+- Raspberry Pi OS 11 (Bullseye) or earlier
+- Debian 11 (Bullseye) or earlier
+- Ubuntu 20.04 or earlier
+
+A GTK3 version for older systems is planned for the stable (non-beta) release.
 
 ## Installation
 
